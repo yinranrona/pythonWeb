@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>WBS管理</title>
+
+        <script type="text/javascript" src="{% static 'js/jquery.min.js' %}" media="screen"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.0.8/semantic.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/reqwest/1.1.3/reqwest.js"></script>
+        <script type="text/javascript" src="{% static 'js/vue.js' %}"></script>
+        <script type="text/javascript" src="{% static 'js/antd.js' %}"></script>
+        <script type="text/javascript" src="{% static 'js/antd.js.map' %}"></script>
+        <script type="text/javascript" src="{% static 'js/moment.js' %}"></script>
+        <script type="text/javascript" src="{% static 'js/react.production.min.js' %}"></script>
+
+        <script type="text/javascript" src="{% static 'js/vue-ctk-date-time-picker.umd.js' %}" media="screen"></script>
+        <link rel="stylesheet" href="{% static 'css/semantic.css' %}"  media="screen" title="no title" charset="utf-8">
+        <link rel="stylesheet" href="{% static 'css/antd.css' %}"  media="screen" title="no title" charset="utf-8">
+        <link rel="stylesheet" href="{% static 'css/antd.css.map' %}"  media="screen" title="no title" charset="utf-8">
+        <link rel="stylesheet" href="{% static 'css/vue-ctk-date-time-picker.css' %}"  media="screen" title="no title" charset="utf-8">
+        <link rel='stylesheet prefetch' href='https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.4.1/components/icon.min.css'>
+        <link rel="stylesheet prefetch" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+        <script type="text/javascript" src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <body>
+
+              <style type="text/css">
+                  h3 {
+                      font-family:'Oswald', sans-serif!important;
+                      font-size:8px;
+                  }
+
+                  body {
+                      font-family: 'Raleway', sans-serif;
+                      font-size:15px;
+                  }
+                  p {
+                      font-family: 'Raleway', sans-serif;
+                      font-size:12px;
+                  }
+                  .ui.search.dropdown{
+                      min-width: 100%;
+                  }
+                  .ui.dropdown.search.multiple{
+                      min-width: 100%;
+                  }
+                  #ui-input-plan-starttime,
+                  #ui-input-plan-finishtime,
+                  #ui-input-taskname{
+                      width: 100%;
+                  }
+                  .ui.whitesmoke.buttons{
+                      width: 100%;
+                  }
+                  .error.message{
+                      width: 2000px;
+                  }
+                  .ant-table-column-title {
+                    font-weight: bolder;
+                  }
+
+        </style>
+
+        <div class="ui grey inverted large secondary pointing menu" id="headerMenu">
+            <a id="sidebarHome" class="active item">
+              Home
+            </a>
+            <div class="right menu" id="rightMenu">
+                <a class="item">
+                  {{ request.session.username }}
+                  <span style="margin-left:10px;" class="ui mini circular image">
+                    <img src="{{ userImage }}">
+                  </span>
+                </a>
+                <div class="item">
+                  <div>
+                    <a class="ui small circular button" href="{% url 'logout' %}">Logout</a>
+                  </div>
+                </div>
+                <div class="ui dropdown item">
+                   <i class="settings icon"></i>
+                   <i class="dropdown icon"></i>
+                  <div class="menu">
+                    <a class="item" href="{% url 'logout' %}"><i class="home icon"></i> Home</a>
+                    <a class="item" href="#link2"><i class="user icon"></i> Account</a>
+                    <a class="item" href="#link3"><i class="user plus icon"></i> Add user</a>
+                  </div>
+                </div>
+            </div>
+        </div>
+
+        <h2 class="ui cnter aligned icon header">
+          <i class="users icon"></i>
+          WBS管理
+          <p class="ui sub header">
+              from ISB GROUP
+          </p>
+        </h2>
+        <div class="wrapper">
+        </div>
+
+        <div class="ui top attached tabular menu">
+
+          <a class="item" href="?labelID=#">ALL</a>
+        </div>
+
+        <div id="app2">
+          <template>
+            <a-table
+              :columns="columns"
+              :data-source="setTable"
+              :row-selection="rowSelection"
+              :expanded-row-keys.sync="expandedRowKeys"
+              bordered
+            />
+            <template slot="contentName" slot-scope="text, record">
+              <span v-if="record.children == null">
+                <span :id='`taskNametd${record.key}`'>
+                  <span id="taskNameFirst" v-html="record.contentName">
+                  </span>
+                  <span id="ui-input-taskname" style="display:none" class="ui input">
+                    <input id="ui-input-taskname-input" type="text" :value="record.contentName">
+                  </span>
+                </span>
+              </span>
+              <span v-else>
+                <span id="taskNameFirst" v-html="record.contentName"></span>
+              </span>
+            </template>
+            <template slot="labelName" slot-scope="text, record">
+              <div :id='`labelNametd${record.key}`'>
+                <div class="ui small tag labels" style="margin-top:2px;">
+                      <a v-for="label in record.labelGroup" :key="label.labelName" id="labelNameFirst" class="ui label" v-html="label.labelName">
+                      </a>
+                </div>
+                <div id="multi-select-label" style="display:none" class="ui fluid multiple search selection dropdown">
+                    <input id="multi-select-label-input" type="hidden" name="country">
+                  <i class="dropdown icon"></i>
+                  <div class="default text"></div>
+                  <div class="menu">
+                    {% for label in labelManage_list %}
+                      <div class="item" data-value="{{ label.labelID }}"><i class="tag icon"></i>{{ label.labelName }}</div>
+                    {% endfor %}
+                 </div>
+               </div>
+              </div>
+            </template>
+            <template slot="personName" slot-scope="text, record">
+              <span v-if="record.children == null">
+                <div :id='`personNametd${record.key}`'>
+                  <div id="personNameFirst">
+                    <a class="ui image label">
+                        <img class="ui circular image" :src="record.personImage">
+                        <span v-html="record.personName"></span>
+                    </a>
+                  </div>
+                  <div id="personNameSecond" style="display:none">
+                    <select id="modifiedPersonname" class="ui search dropdown">
+                      <option id="optionFirst" value=""></option>
+                      {% for person in person_list %}
+                        <option value="{{ person.personID }}">{{ person.personName }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </td>
+              </span>
+            </template>
+
+              <template slot="planStartTime" slot-scope="text, record">
+                <div :id='`planStartTimetd${record.key}`' colspan="3">
+                  <div id="planStartTimeFirst" v-html="record.planStartTime"></div>
+                  <!-- <div id="planStartTimeFirst">{{ record.planStartTime }}</div> -->
+                  <div id="planStartTimeSecond" style="display:none">
+                      <vue-ctk-date-time-picker id="modifiedPlanStartTime" label="modify plan start time..." v-model="value" format="YYYY-MM-DD HH:mm:ss" formatted="YYYY-MM-DD HH:mm:ss" >
+                      </vue-ctk-date-time-picker>
+                  </div>
+                </div>
+              </template>
+              <template slot="planFinishTime" slot-scope="text, record">
+                <div :id='`planFinishTimetd${record.key}`' colspan="3">
+                   <div id="planFinishTimeFirst" v-html="record.planFinishTime"></div>
+                   <div id="planFinishTimeSecond" style="display:none">
+                     <vue-ctk-date-time-picker id="modifiedPlanFinishTime" label="modify plan finish time..." v-model="value" format="YYYY-MM-DD HH:mm:ss" formatted="YYYY-MM-DD HH:mm:ss" >
+                     </vue-ctk-date-time-picker>
+                  </div>
+                </div>
+              </template>
+              <template slot="actualStartTime" slot-scope="text, record">
+                <div :id='`actualStartTimetd${record.key}`' colspan="3">
+                    <div id="actualStartTimeFirst">
+                      <form action="/project/" method="post">
+                        <input name="actualTimeTaskID" style="display:none" :value="record.key"/>
+                        <input name="actualTimeFlag" style="display:none" value="actualStartTimeStamping"/>
+                        <span :id='`actualStartTimeSpan${record.key}`' v-html="record.actualStartTime"></span>
+                        <button :id='`actualStartTime${record.key}`' :style="record.actualStartTime === null? 'padding:0.7em;':'padding:0.7em;display:none'" type="submit" class="circular ui icon button">
+                          <i class="large clock outline icon"></i>
+                        </button>
+                        {% csrf_token %}
+                      </form>
+                    </div>
+                    <div id="actualStartTimeSecond" style="display:none">
+                      <vue-ctk-date-time-picker id="modifiedActualStartTime" label="modify actual start time..." v-model="value" format="YYYY-MM-DD HH:mm:ss" formatted="YYYY-MM-DD HH:mm:ss" >
+                      </vue-ctk-date-time-picker>
+                    </div>
+                </div>
+              </template>
+              <template slot="actualFinishTime" slot-scope="text, record">
+                <div :id='`actualFinishTimetd${record.key}`' colspan="3">
+                  <div id="actualFinishTimeFirst">
+                    <form action="/project/" method="post">
+                      <input name="actualTimeTaskID" style="display:none" :value="record.key"/>
+                      <input name="actualTimeFlag" style="display:none" value="actualFinishTimeStamping"/>
+
+                      <span :id='`actualFinishTimeSpan${record.key}`' v-html="record.actualFinishTime"></span>
+                      <button :id='`actualFinishTime${record.key}`' :style="record.actualFinishTime === null? 'padding:0.7em;':'padding:0.7em;display:none'" type="submit" class="circular ui icon button">
+                        <i class="large clock outline icon" ></i>
+                      </button>
+                      {% csrf_token %}
+                    </form>
+                  </div>
+                  <div id="actualFinishTimeSecond" style="display:none">
+                    <vue-ctk-date-time-picker id="modifiedActualFinishTime" label="modify actual finish time..." v-model="value" format="YYYY-MM-DD HH:mm:ss" formatted="YYYY-MM-DD HH:mm:ss" >
+                    </vue-ctk-date-time-picker>
+                  </div>
+                </div>
+              </template>
+
+              <template slot="operations" slot-scope="text, record">
+                <span v-if="record.children == null">
+                  <button :id='`delete${record.key}`' class="ui vertical animated button" tabindex="0" @click="deleteClick(record)">
+                    <span name="deleteButton" style="display:none" :value="record.key"></span>
+                    <div class="hidden content">削除</div>
+                    <div class="visible content">
+                        <i class="trash alternate icon"></i>
+                    </div>
+                  </button>
+                  <button :id='`modifiedCancel${record.key}`' style="display:none" class="ui vertical animated button" tabindex="0"
+                    @click="modifiedCancelClick(record)">
+                    <div class="hidden content">取消</div>
+                    <div class="visible content">
+                        <i class="close icon"></i>
+                    </div>
+                  </button>
+                  <button :id='`modified${record.key}`' class="ui vertical animated button" tabindex="0"
+                    @click="modifiedClick(record)">
+                    <div class="hidden content">変更</div>
+                    <div class="visible content">
+                      <i class="edit icon"></i>
+                    </div>
+                  </button>
+                  <button :id='`modifiedSave${record.key}`' style="display:none" class="ui vertical animated button" tabindex="0"
+                    @click="modifiedSaveClick(record)">
+                    <div class="hidden content">保存</div>
+                    <div class="visible content">
+                        <i class="save icon"></i>
+                    </div>
+                  </button>
+                </span>
+              </template>
+            </a-table>
+            <button id="addRow" class="ui icon button" data-title="タスク追加" data-content="１行目のタスクを追加することができる">
+              <i class="add icon"></i>
+            </button>
+          </template>
+        </div>
+
+        <table class="ui celled structured table" style="table-layout:fixed;display:none">
+          <thead>
+            <tr>
+              <th rowspan="2" style="width:7%"></th>
+              <th rowspan="2" style="width:30%">タスク名</th>
+              <th rowspan="2" style="width:15%">ラベル</th>
+              <th rowspan="2" style="width:10%">担当者</th>
+              <th colspan="7" style="width:33%">予定</th>
+            </tr>
+            <tr>
+              <th colspan="3" >開始時間</th>
+              <th colspan="3" >終了時間</th>
+              <th>工数</th>
+            </tr>
+          </thead>
+          <tbody>
+              <tr id="addRowTask" style="display:none">
+                <td id="addRowTaskID">
+                  <div class="ui whitesmoke buttons" style="width:80%;">
+                    <button id="modifiedAddedRow" class="ui button" style="width:80%;"><i class="save icon"></i></button>
+                    <div class="ui combo top right pointing dropdown icon button">
+                      <i class="dropdown icon"></i>
+                      <div class="menu">
+                        <div class="item"><i id="save-item-icon" class="save icon" data-title="タスク保存"></i></div>
+                        <div class="item"><i id="delete-item-icon" class="delete icon" data-title="タスク削除"></i></div>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td id="addRowTaskName">
+                  <div id="ui-input-taskname" class="ui input">
+                    <input id="ui-input-taskname-input" type="text" placeholder="add task...">
+                  </div>
+                </td>
+                <td id="addRowLabelName">
+                    <div id="multi-select-label" class="ui fluid multiple search selection dropdown">
+                      <input id="multi-select-label-input" type="hidden" name="country">
+                      <i class="dropdown icon"></i>
+                      <div class="default text">label name...</div>
+                      <div class="menu">
+                        {% for label in labelManage_list %}
+                        <div class="item" data-value="{{ label.labelID }}"><i class="tag icon"></i>{{ label.labelName }}</div>
+                        {% endfor %}
+                     </div>
+                   </div>
+                </td>
+                <td id="addRowPersonName">
+                  <select id="addedPersonname" class="ui search dropdown">
+                    <option value="">person...</option>
+                    {% for person in person_list %}
+                      <option value="{{ person.personID }}">{{ person.personName }}</option>
+                    {% endfor %}
+                  </select>
+                </td>
+                <td id="addRowPlanStartTime" colspan="3" class="center aligned">
+                  <vue-ctk-date-time-picker id="addedPlanStartTime" label="add plan start time..." v-model="value" format="YYYY-MM-DD HH:mm:ss" formatted="YYYY-MM-DD HH:mm:ss" >
+                  </vue-ctk-date-time-picker>
+                </td>
+                <td id="addRowPlanFinishTime" colspan="3" class="center aligned">
+                  <vue-ctk-date-time-picker id="addedPlanFinishTime" label="add plan finish time..." v-model="value" format="YYYY-MM-DD HH:mm:ss" formatted="YYYY-MM-DD HH:mm:ss" >
+                  </vue-ctk-date-time-picker>
+                </td>
+                <td></td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr></tr>
+                <tr>
+                  <td>
+                  </td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td colspan="3"></td>
+                  <td colspan="3"></td>
+                  <td></td>
+                </tr>
+            </tfoot>
+          </table>
+
+          {% for project in project_list %}
+
+              <div id="deleteModal{{ project.taskID }}"  class="ui mini modal" >
+                 <div class="header">
+                 </div>
+                 <div class="content">
+                 </div>
+                 <div class="actions">
+                   <form action="{% url 'delete' project.taskID %}" method="post">
+                       <div class="ui negative button">
+                         No
+                       </div>
+                       <button class="ui positive right labeled icon button">
+                         Yes
+                         <i class="checkmark icon"></i>
+                       </button>
+                     {% csrf_token %}
+                   </form>
+                 </div>
+             </div>
+          {% endfor %}
+
+          <div id="addModal" class="ui mini modal" >
+             <div class="header">
+             </div>
+             <div class="content">
+             </div>
+             <div class="actions">
+                   <div class="ui negative button">
+                     No
+                   </div>
+                   <button id="addModalYes" type="button" class="ui positive right labeled icon button">
+                     Yes
+                     <i class="checkmark icon"></i>
+                   </button>
+             </div>
+         </div>
+         <div class="ui error message" style="display:none">
+           <i class="close icon"></i>
+           <div class="header">
+             エラーが発生しました。
+           </div>
+           <ul class="list">
+             <li>すべての項目に値を入れてください。</li>
+           </ul>
+         </div>
+
+         <div class="ui left demo vertical inverted sidebar labeled icon menu">
+           <a class="item">
+             <i class="home icon"></i>
+             Home
+           </a>
+           <a class="item">
+             <i class="block layout icon"></i>
+             Topics
+           </a>
+           <a class="item">
+             <i class="smile icon"></i>
+             Friends
+           </a>
+          </div>
+
+      <script>
+      const columns = [
+        {
+          title: 'タスク名',
+          key: 'contentName',
+          dataIndex: 'contentName',
+          width: '23%',
+          scopedSlots: { customRender: 'contentName' },
+        },
+        {
+          title: 'ラベル',
+          key: 'labelName',
+          dataIndex: 'labelName',
+          width: '10%',
+          scopedSlots: { customRender: 'labelName' },
+        },
+        {
+          title: '担当者',
+          key: 'personName',
+          dataIndex: 'personName',
+          width: '5%',
+          scopedSlots: { customRender: 'personName' },
+        },
+        {
+          title: '予定',
+          fixed: 'center',
+          children: [
+            {
+              title: '開始時間',
+              dataIndex: 'planStartTime',
+              key: 'planStartTime',
+              width: '11%',
+              scopedSlots: { customRender: 'planStartTime' },
+            },
+            {
+              title: '終了時間',
+              dataIndex: 'planFinishTime',
+              key: 'planFinishTime',
+              width: '11%',
+              scopedSlots: { customRender: 'planFinishTime' },
+            },
+            {
+              title: '工数',
+              key: 'planManHours',
+              dataIndex: 'planManHours',
+              width: '3%',
+            },
+          ],
+        },
+        {
+          title: '実績',
+          fixed: 'center',
+          children: [
+            {
+              title: '開始時間',
+              dataIndex: 'actualStartTime',
+              key: 'actualStartTime',
+              width: '11%',
+              scopedSlots: { customRender: 'actualStartTime' },
+            },
+            {
+              title: '終了時間',
+              dataIndex: 'actualFinishTime',
+              key: 'actualFinishTime',
+              width: '11%',
+              scopedSlots: { customRender: 'actualFinishTime' },
+            },
+            {
+              title: '工数',
+              key: 'actualManHours',
+              dataIndex: 'actualManHours',
+              width: '3%',
+            },
+          ],
+        },
+        {
+          title: '状態',
+          key: 'status',
+          dataIndex: 'status',
+          width: '5%',
+          scopedSlots: { customRender: 'status' },
+        },
+        {
+          title: '編集',
+          key: 'operations',
+          dataIndex: 'operations',
+          width: '15%',
+          scopedSlots: { customRender: 'operations' },
+        },
+      ];
+      const rowSelection = {
+        onChange: (selectedRowKeys, selectedRows) => {
+          console.log(`selectedRowKeys: ${selectedRowKeys}`, 'selectedRows: ', selectedRows);
+        },
+        onSelect: (record, selected, selectedRows) => {
+          console.log(record, selected, selectedRows);
+        },
+        onSelectAll: (selected, selectedRows, changeRows) => {
+          console.log(selected, selectedRows, changeRows);
+        },
+      };
+
+      const VueCtkDateTimePicker = window['vue-ctk-date-time-picker'];
+      Vue.component('vue-ctk-date-time-picker', VueCtkDateTimePicker);
+
+      var data = new Vue({
+        el: '#app2',
+        data() {
+          return {
+            setTable : JSON.parse('{{labelManage_list_all|safe}}'),
+            projectData : JSON.parse('{{project_list_all|safe}}'),
+            columns,
+            rowSelection,
+            expandedRowKeys: [],
+            value: null,
+          }
+        },
+        methods:{
+            modifiedClick: function (record) {
+             $('#taskNametd' + record.key + ' #taskNameFirst').hide();
+             $('#taskNametd' + record.key + ' #ui-input-taskname').show();
+
+             $('#labelNametd' + record.key + ' #labelNameFirst').hide();
+
+             var labels = [];
+             record.labelGroup.forEach((item, i) => {
+               labels.push(item['labelID']);
+             });
+
+             $('#labelNametd' + record.key + ' #multi-select-label-input').val(labels);
+             $('#labelNametd' + record.key + ' #multi-select-label').show();
+
+             $('#personNametd' + record.key + ' #personNameFirst').hide();
+             $('#personNametd' + record.key + ' #personNameSecond #modifiedPersonname #optionFirst')
+                .val(record.personID);
+             $('#personNametd' + record.key + ' #personNameSecond').show();
+
+             $('#planStartTimetd' + record.key + ' #planStartTimeFirst').hide();
+             $('#planStartTimetd' + record.key + ' #planStartTimeSecond').show();
+             $('#planStartTimetd' + record.key + ' #modifiedPlanStartTime-input')
+
+                // .val("{{ project.planStartTime|default:""|date:"Y-m-d H:i:s"  }}");
+                .val(record.planStartTime);
+
+             $('#planFinishTimetd' + record.key + ' #planFinishTimeFirst').hide();
+             $('#planFinishTimetd' + record.key + ' #planFinishTimeSecond').show();
+             $('#planFinishTimetd' + record.key + ' #modifiedPlanFinishTime-input')
+
+                // .val("{{ project.planFinishTime|default:""|date:"Y-m-d H:i:s"  }}");
+                .val(record.planFinishTime);
+
+             $('#actualStartTimetd' + record.key + ' #actualStartTimeFirst').hide();
+             // if("{{ project.actualStartTime|default:"" }}" != ""){
+             if(record.actualStartTime != null){
+                $('#actualStartTimetd' + record.key + ' #actualStartTimeSecond').show();
+                $('#actualStartTimetd' + record.key + ' #modifiedActualStartTime-input')
+
+                  // .val("{{ project.actualStartTime|default:""|date:"Y-m-d H:i:s"  }}");
+                  .val(record.actualStartTime);
+             }
+
+             $('#actualFinishTimetd' + record.key + ' #actualFinishTimeFirst').hide();
+             // if("{{ project.actualFinishTime|default:"" }}" != ""){
+             if(record.actualFinishTime != null){
+                $('#actualFinishTimetd' + record.key + ' #actualFinishTimeSecond').show();
+                $('#actualFinishTimetd' + record.key + ' #modifiedActualFinishTime-input')
+
+                  // .val("{{ project.actualFinishTime|default:""|date:"Y-m-d H:i:s"  }}");
+                  .val(record.actualFinishTime);
+             }
+             //
+             $('#delete' + record.key).hide();
+             $('#modified' + record.key).hide();
+             $('#modifiedCancel' + record.key).show();
+             $('#modifiedSave' + record.key).show();
+
+             $('.search.dropdown')
+               .dropdown()
+             ;
+            },
+            modifiedCancelClick: function (record) {
+              $('.error.message').hide();
+
+              $('#taskNametd' + record.key + ' #taskNameFirst').show();
+              $('#taskNametd' + record.key + ' #ui-input-taskname').hide();
+
+              $('#labelNametd' + record.key + ' #labelNameFirst').show();
+              $('#labelNametd' + record.key + ' #multi-select-label').hide();
+
+              $('#personNametd' + record.key + ' #personNameFirst').show();
+              $('#personNametd' + record.key + ' #personNameSecond').hide();
+
+              $('#planStartTimetd' + record.key + ' #planStartTimeFirst').show();
+              $('#planStartTimetd' + record.key + ' #planStartTimeSecond').hide();
+
+              $('#planFinishTimetd' + record.key + ' #planFinishTimeFirst').show();
+              $('#planFinishTimetd' + record.key + ' #planFinishTimeSecond').hide();
+
+              $('#actualStartTimetd' + record.key + ' #actualStartTimeFirst').show();
+              $('#actualStartTimetd' + record.key + ' #actualStartTimeSecond').hide();
+
+              $('#actualFinishTimetd' + record.key + ' #actualFinishTimeFirst').show();
+                 $('#actualFinishTimetd' + record.key + ' #actualFinishTimeSecond').hide();
+
+              $('#delete' + record.key).show();
+              $('#modified' + record.key).show();
+              $('#modifiedCancel' + record.key).hide();
+              $('#modifiedSave' + record.key).hide();
+            },
+            modifiedSaveClick: function (record) {
+              var taskname = $('#taskNametd' + record.key + ' #ui-input-taskname-input').val();
+              var label_id= $('#labelNametd' + record.key + ' #multi-select-label-input').val();
+              var person_id = $('#personNametd' + record.key + ' #modifiedPersonname option:selected').val();
+              var planstarttime = $('#planStartTimetd' + record.key + ' #modifiedPlanStartTime-input').val();
+              var planfinishtime = $('#planFinishTimetd' + record.key + ' #modifiedPlanFinishTime-input').val();
+              var actualstarttime = $('#actualStartTimetd' + record.key + ' #modifiedActualStartTime-input').val();
+              var actualfinishtime = $('#actualFinishTimetd' + record.key + ' #modifiedActualFinishTime-input').val();
+
+              $.ajax(
+                {
+                  method: 'GET',
+                  url: "{% url 'modifiedSave' %}",
+                  data: {
+                    taskID: record.key,
+                    taskname: taskname,
+                    label_id: label_id,
+                    person_id: person_id,
+                    planstarttime: planstarttime,
+                    planfinishtime: planfinishtime,
+                    actualstarttime: actualstarttime,
+                    actualfinishtime: actualfinishtime
+                  },
+                  dataType: 'text',
+                  timeout: 100,
+                })
+                .done(function(data){
+                  setTimeout('location.reload()', 100);
+                })
+                .fail(function(data){
+                  $('.error.message').show();
+                })
+            },
+            deleteClick: function (record) {
+              $('#deleteModal' + record.key + ' .header')
+                .html('タスク' + record.key + ' を削除しますか？');
+
+              $('#deleteModal' + record.key + ' .content')
+                .html('Are you sure you want to delete your task' + record.key + ' ？');
+
+              $('#deleteModal' + record.key)
+                .modal('show');
+            },
+        },
+        mounted : function(){
+          console.log('mounted')
+          // console.log(this.$el)
+          console.log(this.$data.projectData);
+          // this.$data.forEach((item, i) => {
+          //   console.log(item.taskID);
+          // }
+          // this.$data.projectData.forEach((item, i) => {
+          //   // console.log(item.taskID);
+          //   new Vue({
+          //   el:  "#planStartTimetd" + item.taskID + " #modifiedPlanStartTime",
+          //   data: {
+          //     value: null
+          //   }
+          //   });
+          //   new Vue({
+          //   el:  "#planFinishTimetd" + item.taskID + " #modifiedPlanFinishTime",
+          //   data: {
+          //     value: null
+          //   }
+          //   });
+          //   new Vue({
+          //   el:  "#actualStartTimetd" + item.taskID + " #modifiedActualStartTime",
+          //   data: {
+          //     value: null
+          //   }
+          //   });
+          //   new Vue({
+          //   el:  "#actualFinishTimetd" + item.taskID + " #modifiedActualFinishTime",
+          //   data: {
+          //     value: null
+          //   }
+          //   });
+          // });
+        },
+      });
+
+      $('#rightMenu .dropdown')
+        .dropdown({
+          action: 'hide'
+        });
+
+      $('#sidebarHome')
+        .on('click', function() {
+            $('.ui.labeled.icon.sidebar')
+              .sidebar('toggle')
+            ;
+        });
+
+      new Vue({
+      el:  "#addRowPlanStartTime #addedPlanStartTime",
+      data: {
+        value: null
+      }
+      });
+      new Vue({
+      el:  "#addRowPlanFinishTime #addedPlanFinishTime",
+      data: {
+        value: null
+      }
+      });
+
+      // data.projectData.forEach((item, i) => {
+      //   console.log(item.taskID);
+      //   new Vue({
+      //   el:  "#planStartTimetd" + item.taskID + " #modifiedPlanStartTime",
+      //   data: {
+      //     value: null
+      //   }
+      //   });
+      //   new Vue({
+      //   el:  "#planFinishTimetd" + item.taskID + " #modifiedPlanFinishTime",
+      //   data: {
+      //     value: null
+      //   }
+      //   });
+      //   new Vue({
+      //   el:  "#actualStartTimetd" + item.taskID + " #modifiedActualStartTime",
+      //   data: {
+      //     value: null
+      //   }
+      //   });
+      //   new Vue({
+      //   el:  "#actualFinishTimetd" + item.taskID + " #modifiedActualFinishTime",
+      //   data: {
+      //     value: null
+      //   }
+      //   });
+      // });
+
+      //add operation for popup
+      $('#addRow')
+        .popup({
+            boundary: '.icon.button .segment'
+        });
+
+      //add operation of save and delete will hide when initial display
+      $('#addRowTask').hide();
+
+      //add operation
+      $('#addRow')
+       .on('click', function() {
+
+         $('.ui.celled.structured.table').show();
+         $('.ui.celled.structured.table #addRowTask').show();
+
+         $('.ui.celled.structured.table tfoot').hide();
+
+         //label list
+         $('#multi-select-label')
+           .dropdown()
+         ;
+         $('.search.dropdown')
+           .dropdown()
+         ;
+
+         });
+
+      //error message
+      // $('.error.message').hide();
+      $('.message .close')
+       .on('click', function() {
+
+         $('.error.message').hide();
+
+       });
+
+      //add operation of save and delete
+      $('#modifiedAddedRow')
+       .on('click', function() {
+
+           var val = $('#modifiedAddedRow i').attr('class');
+
+           //save
+           if(val.indexOf('save') > -1){
+
+             $('#addModal .header')
+               .html('タスクを追加しますか？');
+
+             $('#addModal .content')
+               .html('Are you sure you want to add your task？');
+
+             $('#addModal')
+               .modal('show');
+           }
+           //delete
+           if(val.indexOf('delete') > -1){
+
+               $('.ui.celled.structured.table').hide();
+               $('.ui.celled.structured.table #addRowTask').hide();
+               $('.ui.celled.structured.table tfoot').show();
+               $('.error.message').hide();
+           }
+
+      });
+
+      $('.combo.dropdown')
+       .dropdown({
+         action: 'combo'
+       })
+      ;
+      $('#save-item-icon')
+      .popup({
+         boundary: '.icon.button .segment'
+      });
+      $('#delete-item-icon')
+      .popup({
+         boundary: '.icon.button .segment'
+      });
+
+      $("form").submit( function(event) {
+         event.preventDefault();
+         var form = $(this);
+         $.ajax({
+           url: form.prop("action"),
+           method: form.prop("method"),
+           data: form.serialize(),
+           timeout: 100,
+           dataType: "text",
+         })
+         .done( function(data) {
+           setTimeout('location.reload()', 100);
+         })
+      });
+
+      //save for modal
+      $('#addModalYes')
+       .on('click', function() {
+
+           var taskname = $('#addRowTaskName #ui-input-taskname-input').val();
+           var label_id= $('#addRowLabelName #multi-select-label-input').val();
+           var person_id = $('#addRowPersonName #addedPersonname option:selected').val();
+           var planstarttime = $('#addRowPlanStartTime #addedPlanStartTime-input').val();
+           var planfinishtime = $('#addRowPlanFinishTime #addedPlanFinishTime-input').val();
+
+           $.ajax(
+             {
+               method: 'GET',
+               url: "{% url 'add' %}",
+               data: {
+                 taskname: taskname,
+                 label_id: label_id,
+                 person_id: person_id,
+                 planstarttime: planstarttime,
+                 planfinishtime: planfinishtime
+               },
+               dataType: 'text',
+               timeout: 100,
+             })
+             .done(function(data){
+               console.log('success!!');
+               setTimeout('location.reload()', 100);
+             })
+             .fail(function(data){
+               console.log('erreeee');
+               $('.error.message').show();
+             })
+
+      });
+
+
+      // var now = new Date();
+      // var y = now.getFullYear();
+      // var m = now.getMonth() + 1;
+      // var d = now.getDate();
+      // var w = now.getDay();
+      // var wd = ['日', '月', '火', '水', '木', '金', '土'];
+      // var h = now.getHours();
+      // var mi = now.getMinutes();
+      // var sc = now.getSeconds();
+      //
+      // {% for project in project_list %}
+      //
+      //    if($('#actualStartTimeSpan{{ project.taskID }}').text() == ""){
+      //
+      //        $('#actualStartTime{{ project.taskID }}').show();
+      //        // $('#actualStartTimeSpan{{ project.taskID }}').show();
+      //
+      //    }else{
+      //
+      //        $('#actualStartTime{{ project.taskID }}').on('click', function() {
+      //
+      //            // $('#actualStartTimeSpan{{ project.taskID }}').text(y + '-' + m + '-' + d + ' ' + h + ':'  + mi + ':'  + sc + ' (' + wd[w] + ')');
+      //            // $('#actualStartTimeInput{{ project.taskID }}').val(y + '-' + m + '-' + d + ' ' + h + ':'  + mi + ':'  + sc + ' (' + wd[w] + ')');
+      //            $('#actualStartTime{{ project.taskID }}').hide();
+      //            // $('#actualStartTimeSpan{{ project.taskID }}').show();
+      //        });
+      //    }
+      //
+      //    if($('#actualFinishTimeSpan{{ project.taskID }}').text() == ""){
+      //
+      //        $('#actualFinishTime{{ project.taskID }}').show();
+      //
+      //    }else{
+      //        $('#actualFinishTime{{ project.taskID }}').on('click', function() {
+      //
+      //            // $('#actualFinishTimeSpan{{ project.taskID }}').text(y + '-' + m + '-' + d + '-' + h + ':'  + mi + ':'  + sc + ' (' + wd[w] + ')');
+      //            // $('#actualFinishTimeInput{{ project.taskID }}').val(y + '-' + m + '-' + d + '-' + h + ':'  + mi + ':'  + sc + ' (' + wd[w] + ')');
+      //            $('#actualFinishTime{{ project.taskID }}').hide();
+      //        });
+      //
+      //    }
+      // {% endfor %}
+
+
+      </script>
+
+
+</html>

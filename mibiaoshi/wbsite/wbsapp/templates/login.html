@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>登録画面</title>
+        <!-- <script type="text/javascript" src="{% static 'js/semantic.min.js' %}"></script> -->
+        <!-- <script type="text/javascript" src="{% static 'js/jquery.min.js' %}" media="screen"></script> -->
+        <!-- <link rel="stylesheet" href="{% static 'css/semantic.css' %}"  media="screen" title="no title" charset="utf-8"> -->
+
+        <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.0.8/semantic.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.0.8/semantic.min.css" rel="stylesheet" />
+
+    </head>
+
+    <body>
+
+        <style type="text/css">
+
+            body > .grid {
+              height: 100%;
+            }
+            .image {
+              margin-top: -100px;
+            }
+            .column {
+              max-width: 450px;
+            }
+
+        </style>
+
+        <div class="ui middle aligned center aligned grid">
+            <div class="column">
+              <h2 class="ui image header">
+                <div class="content">
+                  WBS管理ツールの登録
+                </div>
+              </h2>
+              <form action="/login" method="POST" class="ui large form">
+                <div class="ui inverted stacked secondary segment">
+                  <!-- <div class="ui inverted segment"> -->
+                  <div class="field">
+                    <div class="ui left icon input">
+                      <!-- <i class="user icon"></i> -->
+                      <!-- <input type="text" name="username" placeholder="Username"> -->
+                      <!-- <div class="ui left icon input"> -->
+                        <input type="text" name="userid" placeholder="ユーザーID" value="{{ userid }}">
+                        <i class="user icon"></i>
+                      <!-- </div> -->
+                    </div>
+                  </div>
+                  <div class="field">
+                    <div class="ui left icon input">
+                      <!-- <i class="lock icon"></i> -->
+                      <!-- <input type="password" name="password" placeholder="Password"> -->
+                      <!-- <div class="ui left icon input"> -->
+                        <input type="password" name="password" placeholder="パスワード">
+                        <i class="lock icon"></i>
+                      <!-- </div> -->
+                    </div>
+                  </div>
+                  <button class="ui fluid large brown submit button">登 録</button>
+                  <!-- <div class="ui fluid large inverted primary basic  teal input">Login</div> -->
+                  <!-- <div class="ui inverted segment"> -->
+                    <!-- <button class="ui fluid large inverted blue basic submit button">登録</button> -->
+                  <!-- </div> -->
+                </div>
+                <div class="ui error message">
+                </div>
+                {% csrf_token %}
+              </form>
+
+              {% if loginErr or errPassword %}
+              <div id="errorList" class="ui error message">
+                <ul class="list">
+                  {% if loginErr %}
+                    <li>{{ loginErr }}</li>
+                  {% endif %}
+                  {% if errPassword %}
+                    <li>{{ errPassword }}</li>
+                  {% endif %}
+                </ul>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+
+        <script src="static/js/login.js" media="screen">
+           $("form").submit( function(event) {
+              event.preventDefault();
+              var form = $(this);
+              $.ajax({
+                url: form.prop("action"),
+                method: form.prop("method"),
+                data: form.serialize(),
+                timeout: 10000,
+                dataType: "text",
+              })
+              .done( function(data) {
+                setInterval('location.reload()', 500);
+              })
+              .fail( function(data) {
+                alert('失敗しました。');
+              })
+           });
+
+        </script>
+    </body>
+</html>
